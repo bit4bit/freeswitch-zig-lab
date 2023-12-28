@@ -2,11 +2,11 @@
 
 FST_CORE_BEGIN("conf")
 {
-  FST_MODULE_BEGIN(mod_zig, mod_zig_test)
+  FST_MODULE_BEGIN(mod_zigdemo, mod_zigdemo_test)
     {
       FST_SETUP_BEGIN()
         {
-          fst_requires_module("mod_zig");
+          fst_requires_module("mod_zigdemo");
         }
       FST_SETUP_END();
 

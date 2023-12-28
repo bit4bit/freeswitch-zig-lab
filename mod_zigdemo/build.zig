@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const lib = b.addSharedLibrary(.{
-        .name = "mod_zig",
+        .name = "mod_zigdemo",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = .{ .path = "src/main.zig" },
@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) void {
     lib.linkLibC();
     lib.addIncludePath(.{ .path="/usr/include/freeswitch"});
 
-    const fszig = b.createModule(.{.source_file = .{ .path = "src/fszig.zig"}});
+    const fszig = b.createModule(.{.source_file = .{ .path = "../fszig.zig"}});
     lib.addModule("fszig", fszig);
 
     // This declares intent for the library to be installed into the standard
