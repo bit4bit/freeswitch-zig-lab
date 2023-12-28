@@ -11,22 +11,16 @@ all: check
 
 module/zig-out/lib/libmod_zig.so: module/src/main.zig
 	cd module && zig build
-mod_zig.so: module/zig-out/lib/libmod_zig.so
+$(MODNAME): module/zig-out/lib/libmod_zig.so
 	cp -fv $< $@
-
-.c.o: $<
-	$(CC) $(CFLAGS) -fPIC -o $@ -c $<
 
 .PHONY: clean
 clean:
 	rm -rf module/zig-out
 
-.PHONY: install
-install: $(MODNAME)
-	install $(MODNAME) $(FS_MODULES)
-
 .PHONY: check
-check: $(TESTS) mod_zig.so
-	mkdir -p /tmp/mod_zig
+check: $(TESTS) $(MODNAME)
+	mkdir -p /tmp/mod_zig/.libs
 	cp -rf test /tmp/mod_zig
+	cp -f mod_zig.so /tmp/mod_zig/.libs
 	$(CC) $(CFLAGS) -DSWITCH_TEST_BASE_DIR_FOR_CONF=\"/tmp/mod_zig/test\" -DSWITCH_TEST_BASE_DIR_OVERRIDE=\"/tmp/mod_zig/test\" -o .check $(TESTS) $(LDFLAGS) && ./.check

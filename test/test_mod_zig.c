@@ -2,13 +2,26 @@
 
 FST_CORE_BEGIN("conf")
 {
-  FST_MODULE_BEGIN(mod_wren, mod_wren_test)
+  FST_MODULE_BEGIN(mod_zig, mod_zig_test)
     {
       FST_SETUP_BEGIN()
         {
-          fst_requires_module("mod_wren");
+          fst_requires_module("mod_zig");
         }
       FST_SETUP_END();
+
+      FST_TEST_BEGIN(rundemo)
+        {
+          switch_stream_handle_t stream = { 0 };
+
+          SWITCH_STANDARD_STREAM(stream);
+
+          fst_check(switch_api_execute("zigrun", "demo", NULL, &stream) == SWITCH_STATUS_SUCCESS);
+
+          fst_check(strstr(stream.data, "demo") == stream.data);
+          free(stream.data);
+        }
+      FST_TEST_END();
 
       FST_TEARDOWN_BEGIN()
         {
