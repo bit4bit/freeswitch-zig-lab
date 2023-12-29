@@ -10,18 +10,24 @@ FST_CORE_BEGIN("conf")
         }
       FST_SETUP_END();
 
-      FST_TEST_BEGIN(rundemo)
+      FST_TEST_BEGIN(dump_hash)
         {
           switch_stream_handle_t stream = { 0 };
 
           SWITCH_STANDARD_STREAM(stream);
 
-          fst_check(switch_api_execute("zigrun", "demo", NULL, &stream) == SWITCH_STATUS_SUCCESS);
+          fst_check(switch_api_execute("userspy_show", "userspy_show", NULL, &stream) == SWITCH_STATUS_SUCCESS);
 
-          fst_check(strstr(stream.data, "demo") == stream.data);
-          free(stream.data);
+          fst_check_string_has(stream.data, "total spy");
         }
       FST_TEST_END();
+
+
+      FST_SESSION_BEGIN(spy_a_user)
+        {
+          fst_check(switch_core_session_execute_application(fst_session, "userspy", "12346") == SWITCH_STATUS_SUCCESS);
+        }
+      FST_SESSION_END();
 
       FST_TEARDOWN_BEGIN()
         {

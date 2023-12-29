@@ -25,3 +25,14 @@ pub fn switch_add_api(mod_int: *module_interface, int_name: []const u8, descript
     api_interface.function = function;
     api_interface.syntax = @ptrCast(syntax);
 }
+
+pub fn switch_add_app(mod_int: *module_interface, int_name: []const u8, short_desc: []const u8, long_desc: []const u8, function: fs.switch_application_function_t, syntax: []const u8, flags: u8) void {
+    var app_interface: *fs.switch_application_interface_t = @alignCast(@ptrCast(fs.switch_loadable_module_create_interface(@ptrCast(mod_int), fs.SWITCH_APPLICATION_INTERFACE)));
+    app_interface.interface_name = @ptrCast(int_name);
+    app_interface.application_function = function;
+    app_interface.short_desc = @ptrCast(short_desc);
+    app_interface.long_desc = @ptrCast(long_desc);
+    app_interface.syntax = @ptrCast(syntax);
+    app_interface.flags = flags;
+}
+

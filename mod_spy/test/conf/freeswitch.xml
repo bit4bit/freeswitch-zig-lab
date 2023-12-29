@@ -6,6 +6,8 @@
       <modules>
         <load module="mod_console"/>
         <load module="mod_commands"/>
+        <load module="mod_loopback"/>
+        <load module="mod_sndfile"/>
       </modules>
     </configuration>
 
@@ -15,7 +17,7 @@
       </mappings>
       <settings>
         <param name="colorize" value="true"/>
-        <param name="loglevel" value="debug"/>
+        <param name="loglevel" value="info"/>
       </settings>
     </configuration>
 
