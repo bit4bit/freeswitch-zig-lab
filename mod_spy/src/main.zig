@@ -4,8 +4,6 @@ const fs = @cImport({
     @cInclude("switch.h");
 });
 
-const testing = std.testing;
-
 // freeswitch requires entrypoint <mod name>_module_interface
 export const mod_spy_module_interface = fszig.module_definition(mod_spy_load, mod_spy_shutdown, mod_spy_runtime);
 
@@ -39,4 +37,21 @@ export fn mod_spy_shutdown() fs.switch_status_t {
 
 export fn mod_spy_runtime() fs.switch_status_t {
     return fs.SWITCH_STATUS_SUCCESS;
+}
+
+
+
+const Channels = std.ArrayList([]const u8);
+var spy_hash = std.hash_map.StringHashMapUnmanaged(Channels){};
+
+const testing = std.testing;
+test "users to spy" {
+    defer spy_hash.clearAndFree(std.testing.allocator);
+
+    var channels = Channels.init(std.testing.allocator);
+    try channels.append("mero");
+    defer channels.clearAndFree();
+    
+    try spy_hash.put(std.testing.allocator, "demo", channels);
+    try std.testing.expectEqual(spy_hash.get("demo").?.getLast(), "mero");
 }

@@ -41,6 +41,10 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    main_tests.addModule("fszig", fszig);
+    main_tests.linkLibC();
+    main_tests.linkSystemLibrary("freeswitch");
+    main_tests.addIncludePath(.{ .path="/usr/include/freeswitch"});
 
     const run_main_tests = b.addRunArtifact(main_tests);
 
