@@ -18,6 +18,9 @@ $(MODNAME).so: zig-out/lib/lib$(MODNAME).so
 clean:
 	rm -rf module/zig-out
 
+test: src/main.zig
+	zig build test
+
 check: $(TESTS) $(MODNAME).so
 	mkdir -p $(TEST_MOD_DIR)
 	cp -rf test $(TEST_ENV_DIR)

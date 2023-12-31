@@ -16,7 +16,6 @@ export fn dump_hash(cmd: [*c]const u8, session: ?*fs.switch_core_session_t, stre
     return fs.SWITCH_STATUS_SUCCESS;
 }
 
-
 export fn userspy_function(session: ?*fs.switch_core_session_t, data: [*c]const u8) callconv(.C) void {
     _ = session;
     _ = data;
@@ -39,19 +38,55 @@ export fn mod_spy_runtime() fs.switch_status_t {
     return fs.SWITCH_STATUS_SUCCESS;
 }
 
-
-
 const Channels = std.ArrayList([]const u8);
-var spy_hash = std.hash_map.StringHashMapUnmanaged(Channels){};
+
+const SpyLogic = struct {
+    allocator: std.mem.Allocator,
+    spy_hash: std.hash_map.StringHashMap(Channels),
+
+    const Self = @This();
+    
+    pub fn init(allocator: std.mem.Allocator) SpyLogic {
+        return SpyLogic{
+            .allocator = allocator,
+            .spy_hash = std.hash_map.StringHashMap(Channels).init(allocator)
+        };
+    }
+
+    pub fn spyChannel(self: *Self, uuid: []const u8, hash: []const u8) void {
+        self.channelsOf(hash).append(uuid) catch unreachable;
+        return;
+    }
+
+    fn lastChannel(self: *Self, hash: []const u8) []const u8 {
+        return self.channelsOf(hash).getLastOrNull() orelse return "";
+    }
+   
+    pub fn clearAndFree(self: *Self) void {
+        var iter = self.spy_hash.iterator();
+        while (iter.next()) |entry| {
+            entry.value_ptr.clearAndFree();
+        }
+        self.spy_hash.clearAndFree();
+    }
+
+    fn channelsOf(self: *Self, hash: []const u8) *Channels {
+        if (self.spy_hash.getPtr(hash)) |channels| {
+            return channels;
+        }
+
+        self.spy_hash.put(hash, Channels.init(self.allocator)) catch unreachable;
+
+        return self.spy_hash.getPtr(hash).?;
+    }
+};
 
 const testing = std.testing;
-test "users to spy" {
-    defer spy_hash.clearAndFree(std.testing.allocator);
+test "spy a channel" {
+    var logic = SpyLogic.init(std.testing.allocator);
+    defer logic.clearAndFree();
 
-    var channels = Channels.init(std.testing.allocator);
-    try channels.append("mero");
-    defer channels.clearAndFree();
-    
-    try spy_hash.put(std.testing.allocator, "demo", channels);
-    try std.testing.expectEqual(spy_hash.get("demo").?.getLast(), "mero");
+    logic.spyChannel("12345", "demo");
+
+    try std.testing.expectEqualStrings("12345", logic.lastChannel("demo"));
 }
