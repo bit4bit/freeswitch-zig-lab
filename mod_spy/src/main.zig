@@ -62,12 +62,12 @@ const SpyLogic = struct {
         return self.channelsOf(hash).getLastOrNull() orelse return "";
     }
    
-    pub fn clearAndFree(self: *Self) void {
+    pub fn deinit(self: *Self) void {
         var iter = self.spy_hash.iterator();
         while (iter.next()) |entry| {
-            entry.value_ptr.clearAndFree();
+            entry.value_ptr.deinit();
         }
-        self.spy_hash.clearAndFree();
+        self.spy_hash.deinit();
     }
 
     fn channelsOf(self: *Self, hash: []const u8) *Channels {
@@ -84,7 +84,7 @@ const SpyLogic = struct {
 const testing = std.testing;
 test "spy a channel" {
     var logic = SpyLogic.init(std.testing.allocator);
-    defer logic.clearAndFree();
+    defer logic.deinit();
 
     logic.spyChannel("12345", "demo");
 
