@@ -70,8 +70,11 @@ pub const SpyLogic = struct {
         self.state.deinit();
     }
 
-    // callback for call hangup
-    pub fn on_hangup(self: *Self, uuid: []const u8, userid: []const u8) void {
+    pub fn spyChannel(self: *Self, uuid: []const u8, userid: []const u8) void {
+        self.state.spyChannel(uuid, userid);
+    }
+
+    pub fn ignoreChannel(self: *Self, uuid: []const u8, userid: []const u8) void {
         self.state.ignoreChannel(uuid, userid);
     }
 };
@@ -102,9 +105,9 @@ test "ignore a spied channel on hangup" {
     var logic = SpyLogic.init(std.testing.allocator);
     defer logic.deinit();
 
-    logic.state.spyChannel("12345", "demo");
+    logic.spyChannel("12345", "demo");
     try std.testing.expect(logic.state.hasSpyChannel("demo") == true);
     
-    logic.on_hangup("12345", "demo");
+    logic.ignoreChannel("12345", "demo");
     try std.testing.expect(logic.state.hasSpyChannel("demo") == false);
 }
