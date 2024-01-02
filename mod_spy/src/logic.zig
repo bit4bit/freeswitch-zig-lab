@@ -2,14 +2,14 @@ const std = @import("std");
 
 const Channels = std.ArrayList([]const u8);
 
-const SpyLogic = struct {
+pub const SpyState = struct {
     allocator: std.mem.Allocator,
     spy_user: std.hash_map.StringHashMap(Channels),
 
     const Self = @This();
     
-    pub fn init(allocator: std.mem.Allocator) SpyLogic {
-        return SpyLogic{
+    pub fn init(allocator: std.mem.Allocator) SpyState {
+        return SpyState{
             .allocator = allocator,
             .spy_user = std.hash_map.StringHashMap(Channels).init(allocator)
         };
@@ -54,24 +54,57 @@ const SpyLogic = struct {
     }
 };
 
+// Implementation of use cases
+pub const SpyLogic = struct {
+    state: SpyState,
+
+    const Self = @This();
+    
+    pub fn init(allocator: std.mem.Allocator) Self {
+        return .{
+            .state = SpyState.init(allocator)
+        };
+    }
+
+    pub fn deinit(self: *Self) void {
+        self.state.deinit();
+    }
+
+    // callback for call hangup
+    pub fn on_hangup(self: *Self, uuid: []const u8, userid: []const u8) void {
+        self.state.ignoreChannel(uuid, userid);
+    }
+};
+
 const testing = std.testing;
 test "spy a channel" {
-    var logic = SpyLogic.init(std.testing.allocator);
-    defer logic.deinit();
+    var state = SpyState.init(std.testing.allocator);
+    defer state.deinit();
 
-    logic.spyChannel("12345", "demo");
+    state.spyChannel("12345", "demo");
 
-    try std.testing.expect(logic.hasSpyChannel("demo") == true);
-    try std.testing.expect(logic.hasSpyChannel("notexists") == false);
+    try std.testing.expect(state.hasSpyChannel("demo") == true);
+    try std.testing.expect(state.hasSpyChannel("notexists") == false);
 }
 
 test "ignore a spied channel" {
+    var state = SpyState.init(std.testing.allocator);
+    defer state.deinit();
+
+    state.spyChannel("12345", "demo");
+    try std.testing.expect(state.hasSpyChannel("demo") == true);
+
+    state.ignoreChannel("12345", "demo");
+    try std.testing.expect(state.hasSpyChannel("demo") == false);
+}
+
+test "ignore a spied channel on hangup" {
     var logic = SpyLogic.init(std.testing.allocator);
     defer logic.deinit();
 
-    logic.spyChannel("12345", "demo");
-    try std.testing.expect(logic.hasSpyChannel("demo") == true);
-
-    logic.ignoreChannel("12345", "demo");
-    try std.testing.expect(logic.hasSpyChannel("demo") == false);
+    logic.state.spyChannel("12345", "demo");
+    try std.testing.expect(logic.state.hasSpyChannel("demo") == true);
+    
+    logic.on_hangup("12345", "demo");
+    try std.testing.expect(logic.state.hasSpyChannel("demo") == false);
 }
