@@ -28,8 +28,41 @@ export fn userspy_function(session: ?*fs.switch_core_session_t, data: [*c]const 
     _ = data;
 }
 
-export fn event_handler(event: [*c]fs.switch_event_t) void {
+fn process_event(event: *fs.switch_event_t) bool {
     _ = event;
+
+    return true;
+}
+
+export fn event_handler(event: [*c]fs.switch_event_t) void {
+    if (!process_event(@ptrCast(event))) {
+        const peer_uuid = fs.switch_event_get_header(event, "variable_signal_bond");
+
+        // TODO: test
+        if (peer_uuid == null) {
+            return;
+        }
+
+        // TODO: test
+        const peer_session = fszig.switch_core_session_locate(peer_uuid);
+        if (peer_session == null) {
+            // TODO: switch_log_printf
+            return;
+        }
+        defer fs.switch_core_session_rwunlock(peer_session);
+
+        const peer_channel = fs.switch_core_session_get_channel(peer_session);
+        const peer_event: *fs.switch_event_t = undefined;
+        if (fszig.switch_event_create(&peer_event, fs.SWITCH_EVENT_CHANNEL_BRIDGE) != fs.SWITCH_STATUS_SUCCESS) {
+            // TODO: switch_log_printf
+            return;
+        }
+        defer fszig.switch_event_destroy(&peer_event);
+
+        fs.switch_channel_event_set_data(peer_channel, peer_event);
+        _ = process_event(peer_event);
+        _ = fs.switch_channel_set_variable(peer_channel, "_test_mod_spy_processed_event_", "true");
+    }
 }
 
 export fn mod_spy_load(modi: [*c][*c]fszig.module_interface, pool: ?*fs.switch_memory_pool_t) fs.switch_status_t {

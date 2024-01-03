@@ -36,3 +36,14 @@ pub fn switch_add_app(mod_int: *module_interface, int_name: []const u8, short_de
     app_interface.flags = flags;
 }
 
+pub fn switch_core_session_locate(uuid: [*c]const u8) ?*fs.switch_core_session_t {
+    return @ptrCast(fs.switch_core_session_perform_locate(uuid, @src().file, @src().fn_name, @src().line));
+}
+
+pub fn switch_event_create(event: *const *fs.switch_event_t, event_id: fs.switch_event_types_t) fs.switch_status_t {
+    return fs.switch_event_create_subclass_detailed(@src().file, @src().fn_name, @src().line, @ptrCast(@constCast(event)), event_id, @ptrCast(fs.SWITCH_EVENT_SUBCLASS_ANY));
+}
+
+pub fn switch_event_destroy(event: *const *fs.switch_event_t) void {
+    fs.switch_event_destroy(@ptrCast(@constCast(event)));
+}

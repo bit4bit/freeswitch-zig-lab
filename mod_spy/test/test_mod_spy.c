@@ -29,6 +29,16 @@ FST_CORE_BEGIN("conf")
         }
       FST_SESSION_END();
 
+      FST_SESSION_BEGIN(function_event_handler)
+        {
+          switch_event_t *event;
+          fst_check(switch_event_create(&event, SWITCH_EVENT_CHANNEL_BRIDGE) == SWITCH_STATUS_SUCCESS);
+          switch_event_fire(&event);
+          sleep(1);
+          // TODO: how to check changes in function `event_handler`?
+        }
+      FST_SESSION_END();
+
       FST_TEARDOWN_BEGIN()
         {
         }
