@@ -44,6 +44,10 @@ pub fn switch_event_create(event: *const *fs.switch_event_t, event_id: fs.switch
     return fs.switch_event_create_subclass_detailed(@src().file, @src().fn_name, @src().line, @ptrCast(@constCast(event)), event_id, @ptrCast(fs.SWITCH_EVENT_SUBCLASS_ANY));
 }
 
+pub fn switch_channel_set_state(channel: ?*fs.switch_channel_t, state: fs.switch_channel_state_t) fs.switch_channel_state_t {
+    return fs.switch_channel_perform_set_state(@ptrCast(channel), @src().file, @src().fn_name, @src().line, state);
+}
+
 pub fn switch_event_destroy(event: *const *fs.switch_event_t) void {
     fs.switch_event_destroy(@ptrCast(@constCast(event)));
 }

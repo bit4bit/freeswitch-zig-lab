@@ -77,6 +77,24 @@ pub const SpyLogic = struct {
     pub fn ignoreChannel(self: *Self, uuid: []const u8, userid: []const u8) void {
         self.state.ignoreChannel(uuid, userid);
     }
+
+    pub fn spiedChannels(self: *Self, userid: []const u8) ChannelsIterator {
+        return ChannelsIterator{
+            .channels = self.state.channelsOf(userid),
+        };
+    }
+};
+
+pub const ChannelsIterator = struct {
+    channels: *Channels,
+    index: usize = 0,
+    pub fn next(self: *ChannelsIterator) ?[]const u8 {
+        const index = self.index;
+        if (index == self.channels.items.len)
+            return null;
+        self.index += 1;
+        return self.channels.items[index];
+    }
 };
 
 const testing = std.testing;
@@ -110,4 +128,27 @@ test "ignore a spied channel on hangup" {
     
     logic.ignoreChannel("12345", "demo");
     try std.testing.expect(logic.state.hasSpyChannel("demo") == false);
+}
+
+test "iterate over spied channels" {
+    var logic = SpyLogic.init(std.testing.allocator);
+    defer logic.deinit();
+    logic.spyChannel("12345", "demo");
+    
+    var spieds = logic.spiedChannels("demo");
+    
+    try std.testing.expectEqualStrings("12345", spieds.next().?);
+}
+
+test "iterate works on empty channels" {
+    var logic = SpyLogic.init(std.testing.allocator);
+    defer logic.deinit();
+
+    var spieds = logic.spiedChannels("demo");
+    while (spieds.next()) |spy_uuid| {
+        _ = spy_uuid;
+        try std.testing.expect(false);
+    }
+    try std.testing.expect(spieds.next() == null);
+    try std.testing.expect(spieds.next() == null);
 }

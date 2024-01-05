@@ -39,6 +39,23 @@ FST_CORE_BEGIN("conf")
         }
       FST_SESSION_END();
 
+      FST_SESSION_BEGIN(process_event_variable_dialed_user_and_variable_dialed_domain)
+        {
+          fst_check(switch_core_session_execute_application(fst_session, "userspy", "1000@test.org") == SWITCH_STATUS_SUCCESS);
+
+          switch_event_t *event;
+          const char *my_uuid = switch_channel_get_variable(fst_channel, "uuid");
+
+          fst_check(switch_event_create(&event, SWITCH_EVENT_CHANNEL_BRIDGE) == SWITCH_STATUS_SUCCESS);
+          switch_event_add_header_string(event, SWITCH_STACK_BOTTOM, "variable_dialed_user", "1000");
+          switch_event_add_header_string(event, SWITCH_STACK_BOTTOM, "variable_dialed_domain", "test.org");
+
+          switch_event_fire(&event);
+          sleep(1);
+          fst_check_string_has(switch_channel_get_variable(fst_channel, "py_uuid"), my_uuid);
+        }
+      FST_SESSION_END();
+
       FST_TEARDOWN_BEGIN()
         {
         }
