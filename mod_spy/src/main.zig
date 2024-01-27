@@ -47,6 +47,8 @@ fn process_event(event: *fs.switch_event_t) bool {
         std.debug.print("SPYING {s} {*}\n\n", .{key, &mod_logic});
         
         // TODO: why this throws segmentation fault?
+        // because mod_logic has not it been exported?
+        // because it's called from different thread?
         var iter = mod_logic.spiedChannels("1000@test.org");
         while (iter.next()) |spy_uuid| {
             std.debug.print("FOUND SPY UUID {s}\n\n", .{spy_uuid});
