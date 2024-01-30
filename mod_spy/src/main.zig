@@ -52,6 +52,7 @@ fn process_event(event: *fs.switch_event_t) bool {
         // if we enable `threadlocal` to variable `mod_logic` it works but we lose the state
         // if we use `switch_thread_` it doesn't work
         // if we use `std.Thread` it doesn't work
+        // if we use 'bind_user_data' it doesn't work
         var iter = mod_logic.spiedChannels("1000@test.org");
         while (iter.next()) |spy_uuid| {
             std.debug.print("FOUND SPY UUID {s}\n\n", .{spy_uuid});
