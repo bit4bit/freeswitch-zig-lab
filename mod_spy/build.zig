@@ -15,19 +15,19 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const fszig = b.createModule(.{.root_source_file = b.path("../fszig.zig")});
+    fszig.addIncludePath(.{.cwd_relative = "/usr/include/freeswitch"});
+
     const lib = b.addSharedLibrary(.{
         .name = "mod_spy",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig" ),
         .target = target,
         .optimize = optimize,
     });
     lib.linkLibC();
-    lib.addIncludePath(.{ .path="/usr/include/freeswitch"});
-
-    const fszig = b.createModule(.{.source_file = .{ .path = "../fszig.zig"}});
-    lib.addModule("fszig", fszig);
+    lib.root_module.addImport("fszig", fszig);
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -37,14 +37,13 @@ pub fn build(b: *std.Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const main_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/mod_spy.zig" },
+        .root_source_file = b.path("src/mod_spy.zig"),
         .target = target,
         .optimize = optimize,
     });
-    main_tests.addModule("fszig", fszig);
+    main_tests.root_module.addImport("fszig", fszig);
     main_tests.linkLibC();
     main_tests.linkSystemLibrary("freeswitch");
-    main_tests.addIncludePath(.{ .path="/usr/include/freeswitch"});
 
     const run_main_tests = b.addRunArtifact(main_tests);
 
