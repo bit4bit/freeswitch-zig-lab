@@ -52,7 +52,7 @@ FST_CORE_BEGIN("conf")
 
           switch_event_fire(&event);
           sleep(1);
-          fst_check_string_has(switch_channel_get_variable(fst_channel, "py_uuid"), my_uuid);
+          fst_check_string_has(switch_channel_get_variable(fst_channel, "spy_uuid"), my_uuid);
         }
       FST_SESSION_END();
 

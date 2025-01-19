@@ -5,11 +5,13 @@ const fs = @cImport({
 });
 const SpyLogic = @import("./logic.zig").SpyLogic;
 
-// this is truth?
+// everything thread safe?
 var global_allocator = std.heap.GeneralPurposeAllocator(.{}){};
-var mod_logic: SpyLogic = undefined;
+const gpa = global_allocator.allocator();
+var mod_logic = SpyLogic.init(gpa);
 
 // freeswitch requires entrypoint <mod name>_module_interface
+
 export const mod_spy_module_interface = fszig.module_definition(mod_spy_load, mod_spy_shutdown, mod_spy_runtime);
 var node: fs.switch_event_t = .{};
 const modname = "mod_spy";
@@ -24,13 +26,10 @@ export fn dump_hash(cmd: [*c]const u8, session: ?*fs.switch_core_session_t, stre
 }
 
 export fn userspy_function(session: ?*fs.switch_core_session_t, data: [*c]const u8) callconv(.C) void {
-    const alloc = global_allocator.allocator();
     if (fs.switch_core_session_get_channel(session)) |channel| {
         const fsuuid = fs.switch_core_session_get_uuid(session);
-        const uuid = std.fmt.allocPrintZ(alloc, "{s}", .{fsuuid}) catch unreachable;
-        defer alloc.free(uuid);
-        const userid = std.fmt.allocPrintZ(alloc, "{s}", .{data}) catch unreachable;
-        defer alloc.free(userid);
+        const uuid = std.fmt.allocPrintZ(gpa, "{s}", .{fsuuid}) catch unreachable;
+        const userid = std.fmt.allocPrintZ(gpa, "{s}", .{data}) catch unreachable;
         mod_logic.spyChannel(uuid, userid);
         _ = channel;
     }
@@ -42,24 +41,21 @@ fn process_event(event: *fs.switch_event_t) bool {
     const domain = fs.switch_event_get_header(event, "variable_dialed_domain");
 
     if (username != null and domain != null) {
-        const key = std.fmt.allocPrintZ(alloc, "{s}@{s}", .{username, domain}) catch unreachable;
-        defer alloc.free(key);
-        std.debug.print("SPYING {s} {*}\n\n", .{key, &mod_logic});
+        const userid = std.fmt.allocPrintZ(alloc, "{s}@{s}", .{username, domain}) catch unreachable;
+        std.debug.print("SPYING {s}\n\n", .{userid});
         
-        // TODO: why this throws segmentation fault?
-        // because mod_logic has not it been exported?
-        // because it's called from different thread?
-        // if we enable `threadlocal` to variable `mod_logic` it works but we lose the state
-        // if we use `switch_thread_` it doesn't work
-        // if we use `std.Thread` it doesn't work
-        // if we use 'bind_user_data' it doesn't work
-        var iter = mod_logic.spiedChannels("1000@test.org");
+        var iter = mod_logic.spiedChannels(userid);
+        std.debug.print("NEW ITER UUID\n\n", .{});
+
         while (iter.next()) |spy_uuid| {
             std.debug.print("FOUND SPY UUID {s}\n\n", .{spy_uuid});
             if (fszig.switch_core_session_locate(@ptrCast(spy_uuid))) |session| {
                 defer fs.switch_core_session_rwunlock(session);
                 const channel = fs.switch_core_session_get_channel(session);
                 const my_uuid = fs.switch_event_get_header(event, "Unique-ID");
+                const smy_uuid  = std.fmt.allocPrintZ(alloc, "{s}", .{my_uuid}) catch unreachable;
+
+                std.debug.print("SESSION {s} FOR SPY UUID {s} UUID {s}\n\n", .{userid, spy_uuid, smy_uuid});
                 _ = fs.switch_channel_set_variable(channel, "spy_uuid", my_uuid);
                 _ = fszig.switch_channel_set_state(channel, fs.CS_EXCHANGE_MEDIA);
                 fs.switch_channel_set_flag(channel, fs.CF_BREAK);
@@ -102,8 +98,7 @@ export fn event_handler(event: [*c]fs.switch_event_t) void {
 }
 
 export fn mod_spy_load(modi: [*c][*c]fszig.module_interface, pool: ?*fs.switch_memory_pool_t) fs.switch_status_t {
-    const gpa = global_allocator.allocator();
-    mod_logic = SpyLogic.init(gpa);
+
     modi.* = fs.switch_loadable_module_create_module_interface(pool, "mod_spy");
 
     _ = fs.switch_event_bind_removable(modname, fs.SWITCH_EVENT_CHANNEL_BRIDGE, null, event_handler, null, @ptrCast(&node));
@@ -115,6 +110,7 @@ export fn mod_spy_load(modi: [*c][*c]fszig.module_interface, pool: ?*fs.switch_m
 }
 
 export fn mod_spy_shutdown() fs.switch_status_t {
+    //std.debug.print("SPYING SHUTDOWN {*}\n\n", .{&mod_logic});
     mod_logic.deinit();
     _ = global_allocator.deinit();
 

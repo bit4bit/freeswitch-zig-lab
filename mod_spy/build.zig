@@ -27,7 +27,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     lib.linkLibC();
+    lib.addIncludePath(.{.cwd_relative = "/usr/include/freeswitch"});
     lib.root_module.addImport("fszig", fszig);
+
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -44,6 +46,7 @@ pub fn build(b: *std.Build) void {
     main_tests.root_module.addImport("fszig", fszig);
     main_tests.linkLibC();
     main_tests.linkSystemLibrary("freeswitch");
+    main_tests.addIncludePath(.{.cwd_relative = "/usr/include/freeswitch"});
 
     const run_main_tests = b.addRunArtifact(main_tests);
 

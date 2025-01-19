@@ -16,7 +16,8 @@ $(MODNAME).so: zig-out/lib/lib$(MODNAME).so
 	cp -fv $< $@
 
 clean:
-	rm -rf module/zig-out
+	rm -rf zig-out
+	rm -rf .zig-cache
 
 test: src/main.zig
 	zig build test

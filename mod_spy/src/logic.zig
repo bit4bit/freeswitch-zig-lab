@@ -5,22 +5,29 @@ const Channels = std.ArrayList([]const u8);
 pub const SpyState = struct {
     allocator: std.mem.Allocator,
     spy_user: std.hash_map.StringHashMap(Channels),
-
+    mutex: std.Thread.Mutex,
     const Self = @This();
     
     pub fn init(allocator: std.mem.Allocator) SpyState {
         return SpyState{
             .allocator = allocator,
-            .spy_user = std.hash_map.StringHashMap(Channels).init(allocator)
+            .spy_user = std.hash_map.StringHashMap(Channels).init(allocator),
+            .mutex = std.Thread.Mutex{}
         };
     }
 
     pub fn spyChannel(self: *Self, uuid: []const u8, userid: []const u8) void {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
         self.channelsOf(userid).append(uuid) catch unreachable;
         return;
     }
 
     pub fn ignoreChannel(self: *Self, uuid: []const u8, userid: []const u8) void {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
         var offset: usize = 0;
         for (self.channelsOf(userid).items) |item| {
             if (std.mem.eql(u8, uuid, item)) {
@@ -32,6 +39,9 @@ pub const SpyState = struct {
     }
     
     pub fn hasSpyChannel(self: *Self, userid: []const u8) bool {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
         return self.channelsOf(userid).items.len > 0;
     }
 
